@@ -32,15 +32,12 @@ Server.prototype.start = function(done) {
   passport.use(new GitHubStrategy({
       clientID: conf.githubClientId,
       clientSecret: conf.githubClientSecret,
-      callbackURL: 'https://' + conf.hostname +  '/auth/github/callback'
+      callbackURL: conf.scheme + '://' + conf.hostname +  '/auth/github/callback'
     },
     function(accessToken, refreshToken, profile, done) {
-      // asynchronous verification, for effect...
+      // TODO: Load the user record here.
       process.nextTick(function () {
-        // To keep the example simple, the user's GitHub profile is returned to
-        // represent the logged-in user.  In a typical application, you would want
-        // to associate the GitHub account with a user record in your database,
-        // and return that user instead.
+        profile.token = accessToken;
         return done(null, profile);
       });
     }
@@ -61,56 +58,57 @@ Server.prototype.start = function(done) {
     saveUninitialized: true,
   };
   app.use(expressSession(options));
-  // Initialize Passport!  Also use passport.session() middleware, to support
-  // persistent login sessions (recommended).
   app.use(passport.initialize());
   app.use(passport.session());
+  // Initialize Passport!  Also use passport.session() middleware, to support
+  // persistent login sessions (recommended).
   app.use(serveStatic(__dirname + '/public'));
 
   app.listen(conf.port, done);
-};
 
 
-app.get('/', function(req, res){
-  res.render('index', { user: req.user });
-});
-
-app.get('/account', ensureAuthenticated, function(req, res){
-  res.render('account', { user: req.user });
-});
-
-app.get('/login', function(req, res){
-  res.render('login', { user: req.user });
-});
-
-// GET /auth/github
-//   Use passport.authenticate() as route middleware to authenticate the
-//   request.  The first step in GitHub authentication will involve redirecting
-//   the user to github.com.  After authorization, GitHubwill redirect the user
-//   back to this application at /auth/github/callback
-app.get('/auth/github',
-  passport.authenticate('github'),
-  function(req, res){
-    // The request will be redirected to GitHub for authentication, so this
-    // function will not be called.
+  app.get('/', function(req, res){
+    res.render('index', { user: req.user });
   });
 
-// GET /auth/github/callback
-//   Use passport.authenticate() as route middleware to authenticate the
-//   request.  If authentication fails, the user will be redirected back to the
-//   login page.  Otherwise, the primary route function function will be called,
-//   which, in this example, will redirect the user to the home page.
-app.get('/auth/github/callback',
-  passport.authenticate('github', { failureRedirect: '/login' }),
-  function(req, res) {
+  app.get('/account', ensureAuthenticated, function(req, res){
+    res.render('account', { user: req.user });
+  });
+
+  app.get('/login', function(req, res){
+    res.render('login', { user: req.user });
+  });
+
+  var options = {
+    scope: [
+      'user',
+      'user:email',
+      'repo',
+      'repo:status',
+      'read:repo_hook',
+      'write:repo_hook'
+    ],
+    successRedirect: '/',
+    failureRedirect: '/'
+  };
+  app.get('/auth/github', passport.authenticate('github', options), function(req, res) {});
+
+  // GET /auth/github/callback
+  //   Use passport.authenticate() as route middleware to authenticate the
+  //   request.  If authentication fails, the user will be redirected back to the
+  //   login page.  Otherwise, the primary route function function will be called,
+  //   which, in this example, will redirect the user to the home page.
+  app.get('/auth/github/callback',
+    passport.authenticate('github', { failureRedirect: '/login' }),
+    function(req, res) {
+      res.redirect('/');
+    });
+
+  app.get('/logout', function(req, res){
+    req.logout();
     res.redirect('/');
   });
-
-app.get('/logout', function(req, res){
-  req.logout();
-  res.redirect('/');
-});
-
+};
 
 
 // Simple route middleware to ensure user is authenticated.

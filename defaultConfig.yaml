@@ -1,7 +1,8 @@
 port: 3000
-hostname: localhost
+hostname: localhost:3000
 secret: CHANGE_ME
 scheme: http
 # You can get a new client id and secret here: https://github.com/settings/applications
 githubClientId: CHANGE_ME
 githubClientSecret: CHANGE_ME
+githubAppName: 'standards.io'
