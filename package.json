@@ -17,10 +17,21 @@
   },
   "homepage": "https://github.com/tizzo/standards-io",
   "dependencies": {
+    "body-parser": "^1.9.0",
+    "cookie-parser": "^1.3.3",
+    "cookie-session": "^1.0.2",
+    "ejs": "^1.0.0",
+    "errorhandler": "^1.2.0",
     "express": "^4.9.5",
+    "express-session": "^1.8.2",
+    "method-override": "^2.2.0",
+    "morgan": "^1.3.2",
+    "multer": "^0.1.4",
     "passport": "^0.2.1",
     "passport-github": "^0.1.5",
-    "yaml-config-loader": "0.0.7",
+    "serve-favicon": "^2.1.5",
+    "serve-static": "^1.6.3",
+    "yaml-config-loader": "0.0.8",
     "yargs": "^1.3.1"
   },
   "devDependencies": {

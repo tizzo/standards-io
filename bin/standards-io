@@ -1,0 +1,33 @@
+#! /usr/bin/env node
+var yargs = require('yargs');
+var ConfigLoader = require('yaml-config-loader');
+var path = require('path');
+var app = require('..');
+
+var configLoader = new ConfigLoader();
+
+var yargs = yargs
+  .usage('Run the standrads-io server.\nUsage: $0')
+  .describe('port', 'The port to listen on.')
+  .alias('port', 'p')
+  .describe('hostname', 'The hostname of the application.')
+  .alias('hostname', 'H')
+  .showHelpOnFail(true, "Specify --help for available options");
+yargs.help();
+var argv = yargs.argv;
+
+configLoader.addFile(path.resolve(path.join(__dirname, '..', 'defaultConfig.yaml')));
+if (argv._.length) {
+  var i = 0;
+  for (i in argv._) {
+    configLoader.add(argv._[i]);
+  }
+}
+configLoader.addAndNormalizeObject(process.env);
+configLoader.addAndNormalizeObject(argv);
+configLoader.load(function(error, options) {
+  var server = new app.Server(options);
+  server.start(function() {
+   console.log('Now listening on port ' + options.port);
+  });
+});
