@@ -1,16 +1,17 @@
-var express = require('express')
-  , cookieParser = require('cookie-parser')
-  , bodyParser = require('body-parser')
-  , cookieSession = require('cookie-session')
-  , expressSession = require('express-session')
-  , logger = require('morgan')
-  , methodOverride = require('method-override')
-  , serveFavicon = require('serve-favicon')
-  , serveStatic = require('serve-static')
-  , passport = require('passport')
-  , util = require('util')
-  , path = require('path')
-  , GitHubStrategy = require('passport-github').Strategy;
+'use strict';
+var express = require('express'),
+  cookieParser = require('cookie-parser'),
+  bodyParser = require('body-parser'),
+  cookieSession = require('cookie-session'),
+  expressSession = require('express-session'),
+  logger = require('morgan'),
+  methodOverride = require('method-override'),
+  serveFavicon = require('serve-favicon'),
+  serveStatic = require('serve-static'),
+  passport = require('passport'),
+  util = require('util'),
+  path = require('path'),
+  GitHubStrategy = require('passport-github').Strategy;
 
 var app = express();
 
@@ -29,19 +30,19 @@ var Server = function(options) {
 
 Server.prototype.start = function(done) {
   var conf = this.config;
-  passport.use(new GitHubStrategy({
-      clientID: conf.githubClientId,
-      clientSecret: conf.githubClientSecret,
-      callbackURL: conf.scheme + '://' + conf.hostname +  '/auth/github/callback'
-    },
-    function(accessToken, refreshToken, profile, done) {
-      // TODO: Load the user record here.
-      process.nextTick(function () {
-        profile.token = accessToken;
-        return done(null, profile);
-      });
-    }
-  ));
+  var options = {
+    clientID: conf.githubClientId,
+    clientSecret: conf.githubClientSecret,
+    callbackURL: conf.scheme + '://' + conf.hostname +  '/auth/github/callback'
+  };
+  var handler = function(accessToken, refreshToken, profile, done) {
+    // TODO: Load the user record here.
+    process.nextTick(function() {
+      profile.token = accessToken;
+      return done(null, profile);
+    });
+  };
+  passport.use(new GitHubStrategy(options, handler));
 
   app.set('views', path.resolve(path.join(__dirname, '..', 'views')));
   app.set('view engine', 'ejs');
@@ -55,7 +56,7 @@ Server.prototype.start = function(done) {
   var options = {
     secret: conf.secret,
     resave: true,
-    saveUninitialized: true,
+    saveUninitialized: true
   };
   app.use(expressSession(options));
   app.use(passport.initialize());
@@ -66,20 +67,22 @@ Server.prototype.start = function(done) {
 
   app.listen(conf.port, done);
 
-
-  app.get('/', function(req, res){
+  app.get('/', function(req, res) {
+    if (req.user && req.user.token) {
+      console.log(req.user.token);
+    }
     res.render('index', { user: req.user });
   });
 
-  app.get('/account', ensureAuthenticated, function(req, res){
+  app.get('/account', ensureAuthenticated, function(req, res) {
     res.render('account', { user: req.user });
   });
 
-  app.get('/login', function(req, res){
+  app.get('/login', function(req, res) {
     res.render('login', { user: req.user });
   });
 
-  var options = {
+  options = {
     scope: [
       'user',
       'user:email',
@@ -104,12 +107,11 @@ Server.prototype.start = function(done) {
       res.redirect('/');
     });
 
-  app.get('/logout', function(req, res){
+  app.get('/logout', function(req, res) {
     req.logout();
     res.redirect('/');
   });
 };
-
 
 // Simple route middleware to ensure user is authenticated.
 //   Use this route middleware on any resource that needs to be protected.  If
@@ -118,7 +120,7 @@ Server.prototype.start = function(done) {
 //   login page.
 function ensureAuthenticated(req, res, next) {
   if (req.isAuthenticated()) { return next(); }
-  res.redirect('/login')
+  res.redirect('/login');
 }
 
 module.exports = Server;
